@@ -1,1 +1,69 @@
-## Build AI Agents with Phidata: A Quick Guide\n\nPhidata is an open-source platform that simplifies building, deploying, and managing AI agents. Here\'s a brief tutorial to get you started:\n\n**1. Installation:**\n\n*   Set up a Python virtual environment.\n*   Install Phidata: `pip install -U phidata openai duckduckgo-search`\n*   (Optional) Install Docker if needed.\n\n**2. Core Concepts:**\n\n*   **Agent:** The base class for creating AI agents. Key parameters include:\n    *   `model`: Specifies the language model (e.g., OpenAI, Gemini).\n    *   `name`: Unique identifier for the agent.\n    *   `description`: Overview of the agent\'s purpose.\n    *   `instructions`: Guidelines for the agent\'s operations.\n    *   `memory`: Enables the agent to remember information.\n    *    `knowledge`: Allows access to a knowledge base.\n    *   `tools`: Functions or toolkits the agent can use (e.g., web search).\n    *   `reasoning`: Enables step-by-step problem solving.\n    *    `response_model`: Structures the output of the agent using Pydantic models.\n    *    `team`: Allows the agent to be a part of a team and delegate tasks.\n\n**3. Example: Creating a simple agent**\n\n```python\nfrom phi.agent import Agent\n\nagent = Agent(\n    description="You are a helpful assistant",\n    instructions=["Answer in short sentences."],\n    markdown=True,\n    debug_mode=True,\n)\nagent.print_response("Tell me a joke.", stream=True)\n```\n\n**4. Tools:**\n\n*   Pre-built toolkits (e.g., DuckDuckGo for web searches).\n*   Custom Python functions.\n*   Example (web search):\n\n```python\nfrom phi.agent import Agent\nfrom phi.tools.duckduckgo import DuckDuckGo\n\nweb_search_agent = Agent(tools=[DuckDuckGo()], show_tool_calls=True, markdown=True)\nweb_search_agent.print_response("What\'s the weather today?", stream=True)\n```\n\n**5. Knowledge:**\n\n*   Use `AgentKnowledge` to create a knowledge base.\n*   Integrate with vector databases (e.g. Postgres with PgVector, Pinecone).\n*   Example: RAG agent with a PDF knowledge base\n\n```python\nfrom phi.agent import Agent\nfrom phi.model.openai import OpenAIChat\nfrom phi.knowledge.pdf import PDFUrlKnowledgeBase\nfrom phi.vectordb.pgvector import PgVector, SearchType\n\ndb_url = "postgresql+psycopg://ai:ai@localhost:5532/ai"\nvector_db = PgVector(table_name="recipes", db_url=db_url, search_type=SearchType.hybrid)\nknowledge_base = PDFUrlKnowledgeBase(\n    urls=["https://phi-public.s3.amazonaws.com/recipes/ThaiRecipes.pdf"],\n    vector_db=vector_db,\n)\n# knowledge_base.load(upsert=True) # Run only once\nagent = Agent(\n    model=OpenAIChat(id="gpt-4o"),\n    knowledge=knowledge_base,\n    search_knowledge=True,\n    markdown=True,\n)\nagent.print_response("How do I make chicken and galangal in coconut milk soup?", stream=True)\n```\n\n**6. Memory:**\n\n*   Agents remember chat history within a session.\n*   Use `add_history_to_messages` and `num_history_responses` to configure.\n*   For persistent memory across sessions, use `AgentStorage` (e.g., with SQLite).\n\n**7. Structured Output:**\n\n*   Use Pydantic models to define the structure of the agent\'s output.\n*   Set `structured_outputs=True` in the `Agent` class.\n\n**8. Agent Teams:**\n\n*   Create groups of agents with specific roles.\n*   Use a team leader to coordinate tasks.\n\n**9. Reasoning:**\n*   Enable the agent to reason step by step using `reasoning=True`\n\nPhidata offers a wide variety of features that can be used to create complex AI agents. This guide should help you get started with basic concepts.\n'
+# RAG Agent with Gemini and PDF Knowledge Base
+
+This project demonstrates a Retrieval-Augmented Generation (RAG) agent using the Phi framework, Gemini model, and a PostgreSQL-backed vector database for efficient knowledge retrieval from PDF documents. Additionally, it integrates the DuckDuckGo search tool for web-based queries.
+
+## Features
+- **Retrieval-Augmented Generation (RAG)**: Fetches relevant information from stored PDFs and external sources.
+- **Gemini Model Integration**: Uses `gemini-2.0-flash-exp` for generating responses.
+- **PostgreSQL with pgvector**: Stores and retrieves vectorized document embeddings.
+- **DuckDuckGo Search**: Enables web search capability for real-time information retrieval.
+- **Agentic RAG**: The agent can intelligently search knowledge bases and maintain chat history.
+
+## Installation
+
+Ensure you have Python installed and set up a PostgreSQL database with `pgvector` enabled.
+
+1. Clone the repository:
+   ```sh
+   git clone <repository-url>
+   cd <repository-name>
+   ```
+
+2. Install dependencies:
+   ```sh
+   pip install phi psycopg2
+   ```
+
+3. Set up PostgreSQL and configure the database URL:
+   ```sh
+   export DATABASE_URL="postgresql+psycopg://ai:ai@localhost:5532/ai"
+   ```
+
+## Usage
+
+### Load PDF Knowledge Base
+Ensure your PDF files are stored in the `files` directory. Then, initialize and load them into the vector database:
+
+```python
+knowledge_base = PDFKnowledgeBase(path="files", vector_db=PgVector(...))
+knowledge_base.load(upsert=True)  # Run this only once
+```
+
+### Initialize RAG Agent
+
+```python
+rag_agent = Agent(model=Gemini(id="gemini-2.0-flash-exp"), knowledge=knowledge_base, tools=[DuckDuckGo], ...)
+```
+
+### Run the Agent
+
+```python
+rag_agent.print_response("Show some information about Huawei", stream=True)
+```
+**Note: You need to set GOOGLE_API_KEY as environmental variable
+
+## Demo
+For a complete demonstration, refer to the provided Jupyter Notebook in the repository.
+
+## Configuration
+Modify the `db_url` variable to point to your PostgreSQL instance. Ensure `pgvector` is installed and enabled in your database.
+
+## License
+This project is licensed under the MIT License. See the `LICENSE` file for more details.
+
+## Contributions
+Feel free to fork the repository, submit pull requests, or report issues.
+
+---
+This setup enables a robust AI-powered knowledge retrieval system for interacting with PDFs and external sources efficiently.
+
